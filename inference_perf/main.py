@@ -14,7 +14,7 @@
 import time
 from inference_perf.loadgen import LoadGenerator
 from inference_perf.config import DataGenType, MetricsClientType
-from inference_perf.datagen import MockDataGenerator, HFShareGPTDataGenerator
+from inference_perf.datagen import DataGenerator, MockDataGenerator, HFShareGPTDataGenerator
 from inference_perf.client import ModelServerClient, vLLMModelServerClient
 from inference_perf.metrics.base import MetricsClient, PerfRuntimeParameters
 from inference_perf.metrics.prometheus_client import PrometheusMetricsClient
@@ -49,9 +49,11 @@ def main_cli() -> None:
 
     # Define DataGenerator
     if config.data:
-        datagen = MockDataGenerator(config.vllm.api)
+        datagen: DataGenerator
         if config.data.type == DataGenType.ShareGPT:
             datagen = HFShareGPTDataGenerator(config.vllm.api)
+        else:
+            datagen = MockDataGenerator(config.vllm.api)
     else:
         raise Exception("data config missing")
 
