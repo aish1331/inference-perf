@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
+from typing import cast
+from urllib.error import HTTPError
 import requests
 from inference_perf.client.base import ModelServerMetrics, ModelServerPrometheusMetric
-from inference_perf.config import MetricsClientConfig
+from inference_perf.config import PrometheusClientConfig
 from .base import MetricsClient, PerfRuntimeParameters
 
 PROMETHEUS_SCRAPE_BUFFER_SEC = 5
@@ -90,12 +92,12 @@ class PrometheusQueryBuilder:
 
 
 class PrometheusMetricsClient(MetricsClient):
-    def __init__(self, metrics_client_config: MetricsClientConfig) -> None:
-        if metrics_client_config.prometheus:
-            self.url = metrics_client_config.prometheus.url
+    def __init__(self, config: PrometheusClientConfig) -> None:
+        if config:
+            self.url = config.url
             if not self.url:
                 raise Exception("prometheus url missing")
-            self.scrape_interval = metrics_client_config.prometheus.scrape_interval or 30
+            self.scrape_interval = config.scrape_interval or 30
         else:
             raise Exception("prometheus config missing")
 
@@ -142,8 +144,12 @@ class PrometheusMetricsClient(MetricsClient):
             if summary_metric_metadata is None:
                 print("Metric metadata is not present for metric: %s" % (summary_metric_name))
                 continue
-            query_builder = PrometheusQueryBuilder(summary_metric_metadata, duration)
+            summary_metric_metadata = cast(ModelServerPrometheusMetric, summary_metric_metadata)
+            if summary_metric_metadata is None:
+                print("Metric metadata is not present for metric: %s" % (summary_metric_name))
+                continue
 
+            query_builder = PrometheusQueryBuilder(summary_metric_metadata, duration)
             query = query_builder.build_query()
             if not query:
                 print("No query found for metric: %s. Skipping metric." % (summary_metric_name))
@@ -173,12 +179,16 @@ class PrometheusMetricsClient(MetricsClient):
         The result of the query.
         """
         query_result = 0.0
-        response = requests.get(f"{self.url}/api/v1/query", params={"query": query, "time": eval_time})
-        if response is None:
-            print("Error executing query: %s" % (query))
-            return query_result
+        try:
+            response = requests.get(f"{self.url}/api/v1/query", params={"query": query, "time": eval_time})
+            if response is None:
+                print("Error executing query: %s" % (query))
+                return query_result
 
-        response.raise_for_status()
+            response.raise_for_status()
+        except Exception as e:
+            print("Error executing query: %s" % (e))
+            return query_result
 
         # Check if the response is valid
         # Sample response:

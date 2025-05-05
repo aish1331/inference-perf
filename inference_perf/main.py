@@ -66,8 +66,8 @@ def main_cli() -> None:
     # Define Metrics Client
     metrics_client: MetricsClient | None = None
     if config.metrics_client:
-        if config.metrics_client.type == MetricsClientType.PROMETHEUS:
-            metrics_client = PrometheusMetricsClient(metrics_client_config=config.metrics_client)
+        if config.metrics_client.type == MetricsClientType.PROMETHEUS and config.metrics_client.prometheus:
+            metrics_client = PrometheusMetricsClient(config=config.metrics_client.prometheus)
 
     # Define Report Generator
     if config.report:
