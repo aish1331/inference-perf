@@ -37,6 +37,11 @@ class DataGenType(Enum):
     Random = "random"
     SharedPrefix = "shared_prefix"
 
+# DataMode is used to specify if the dataset is online or offline for shareGPT
+class DataMode(Enum):
+    Online = "online"
+    Offline = "offline"
+
 
 # Represents the distribution for input prompts and output generations.
 class Distribution(BaseModel):
@@ -58,6 +63,10 @@ class SharedPrefix(BaseModel):
 
 class DataConfig(BaseModel):
     type: DataGenType = DataGenType.Mock
+    # mode is used to specify if the shareGPT dataset is online or offline
+    mode: Optional[DataMode] = DataMode.Online
+    # dataset_path is used to specify the path to the shareGPT dataset if mode is offline
+    dataset_path: Optional[str] = None
     # Distributions are only supported for synthetic/random dataset at this moment
     input_distribution: Optional[Distribution] = None
     output_distribution: Optional[Distribution] = None
